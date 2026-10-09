@@ -65,7 +65,7 @@ Every draw call is `(geometry, p, style)`. Points are `[x, y]` in board units.
 
 | Call | Draws |
 |---|---|
-| `write(str, x, y, p, {size, color, center})` | Handwriting, letter by letter. `y` is the baseline. |
+| `write(str, x, y, p, {size, color, center})` | Handwriting, letter by letter. `y` is the baseline. Arabic and Hebrew run left from `x`. |
 | `stroke(points, p, {color, width})` | Any shape, drawn progressively. |
 | `arrow(from, to, p, {color, ctrl})` | Arrow. `ctrl` is a point that bends it. |
 | `check(x, y, p, {size, color})` | Tick mark. |
@@ -76,6 +76,8 @@ Every draw call is `(geometry, p, style)`. Points are `[x, y]` in board units.
 | `C.yellow` `blue` `orange` `pink` `green` `red` `purple` `white` | Chalk colours. On the whiteboard the same names are marker inks, and `white` is black. |
 
 Text width is about `0.45 × size` per character for a normal label and `0.63 × size` per capital. Work it out before placing a label beside anything.
+
+**Right-to-left scripts.** `write` spots Arabic or Hebrew from the first letter. `x` is then the right end of the text, where the pen starts (the centre with `center: true`), and the word is uncovered right to left with its letters already joined and its vowel marks in place. It runs small: give it about twice the size of a Latin label, and allow about `0.3 × size` per letter, not counting vowel marks. The voice does not change, so `say` spells the sound ("kitaab") and the board shows the word. See `examples/arabic.js`.
 
 ## Light and dark
 
@@ -199,6 +201,7 @@ For many clips, finish one as the worked example, write the rules above into a b
 | Old annotations still on screen | Ink carries over until a beat has `bg` or `clear`. Repeat the `bg` to start clean on the same screenshot; `clear` goes back to the plain board. |
 | Calling your own variable `box`, `line`, `ring` or `check` | It hides the helper of that name inside your scene. Name rectangles after the thing: `searchBox`, `sendBtn`. |
 | Converting screenshot coordinates by hand | Use `view()`. Hand arithmetic is where rings miss buttons. |
+| Arabic or Hebrew placed by its left edge | For right-to-left text `x` is the right end. Use `center: true` to place it by its middle. |
 | Skipping the sheet | Coordinates are written blind. The sheet is the only check. |
 | A real-audio beat timed by ear or by sentence length | Read `at` from `words.txt`. A guess drifts and the pen runs ahead of the voice. |
 

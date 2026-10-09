@@ -5,6 +5,9 @@
 // Every coordinate is in logical board units (1280x720 by default), rendered at SCALE.
 const SCALE = 1.5, cv = document.getElementById('c'), g = cv.getContext('2d');
 const FONT = '"Bradley Hand","Chalkboard SE","Marker Felt",cursive';
+// Arabic, Hebrew and their relatives are written right to left. These faces place stacked vowel marks correctly.
+const RTL = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFC]/, STRONG = /[A-Za-z\u00C0-\u024F\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFC]/;
+const NASKH = '"Traditional Arabic","Noto Naskh Arabic","Geeza Pro","Arial Hebrew"';
 const C = { yellow: '#ffe066', blue: '#4fc3f7', orange: '#ffb74d', pink: '#f48fb1',
             green: '#81c784', red: '#ef5350', purple: '#b39ddb', white: '#e8e8e8' };
 // Light mode: marker colours on a white board. The names stay the same, so a scene needs no change.
@@ -61,13 +64,28 @@ function stroke(pts, p = 1, o = {}) {
 }
 function write(str, x, y, p = 1, o = {}) {
   if (p <= 0) return;
-  const size = o.size || 36;
-  g.font = `bold ${size}px ${FONT}`; g.fillStyle = o.color || C.white; g.textAlign = 'left';
-  const full = g.measureText(str).width, lx = o.center ? x - full / 2 : x, sub = str.slice(0, Math.ceil(str.length * p));
+  const size = o.size || 36, shaped = RTL.test(str), rtl = shaped && RTL.test((str.match(STRONG) || [''])[0]);   // the first letter sets the direction
+  // A naskh face has no bold, and a faked one smears the vowel marks. A Latin label that quotes an Arabic word keeps its own hand.
+  g.font = !shaped ? `bold ${size}px ${FONT}` : rtl ? `${size}px ${NASKH},${FONT}` : `bold ${size}px ${FONT},${NASKH}`;
+  g.fillStyle = o.color || C.white; g.textAlign = 'left';
+  if (shaped) g.direction = rtl ? 'rtl' : 'ltr';
+  const m = g.measureText(str), full = m.width, lx = o.center ? x - full / 2 : rtl ? x - full : x;   // x is where the pen starts: the right end of right-to-left text
   if (lx < 0 || lx + full > W || y - size < 0 || y > H) warns.add(`text runs off the board: "${str}"`);
   labels.push({ str, x: lx, y: y - size * 0.8, w: full, h: size });
-  g.fillText(sub, lx, y);
-  if (p < 1) pen = [lx + g.measureText(sub).width, y - size * 0.3];
+  if (!shaped) {
+    const sub = str.slice(0, Math.ceil(str.length * p));
+    g.fillText(sub, lx, y);
+    if (p < 1) pen = [lx + g.measureText(sub).width, y - size * 0.3];
+    return;
+  }
+  // Joined letters take their shape from their neighbours, and a vowel mark belongs to the letter under it.
+  // A sliced string would reshape as it grows, so shape the whole string once and uncover it in writing order.
+  const shown = full * p, edge = rtl ? lx + full - shown : lx + shown;
+  const up = m.actualBoundingBoxAscent + 4, down = m.actualBoundingBoxDescent + 4;   // marks stack well above and below the letters
+  g.save(); g.beginPath(); g.rect(rtl ? edge : lx - size, y - up, shown + size, up + down); g.clip();
+  g.fillText(str, lx, y);
+  g.restore(); g.direction = 'ltr';
+  if (p < 1) pen = [edge, y - size * 0.3];
 }
 function arrow(a, b, p = 1, o = {}) {
   const pts = curve(a, b, o.ctrl);
