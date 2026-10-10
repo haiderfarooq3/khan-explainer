@@ -101,6 +101,8 @@ Text width is about `0.45 × size` per character for a normal label and `0.63 ×
 
 See `examples/arabic.js` (an Arabic lesson) and `examples/languages.js` (one word in eight languages).
 
+`node tests/run.js` renders every example and the same short scene in fifteen languages (`tests/languages/`), and fails on any warning. `node tests/fonts.js` prints which face each script gets on this machine: a Mac face, a Noto face, or none.
+
 ## Light and dark
 
 The board is a blackboard unless told otherwise. Three ways to change that:
@@ -125,6 +127,8 @@ scene({ eleven: { voice: '<voice id>', model: 'eleven_multilingual_v2', settings
 - `gap` defaults to 0 here, because the take has its own pauses. At `speed: 1.1` expect about 3.3 words a second.
 - Takes are cached in `.voice/` beside the scene. Re-rendering the same words is free, so lay the board out with `say` first, then switch the voice on and change only drawings.
 - Changing any `say` buys a new take of the whole script.
+
+**Kokoro: a free local human voice.** `pip install kokoro soundfile` once (add `"misaki[ja]"` or `"misaki[zh]"` for Japanese or Chinese), then put `kokoro: true` on the scene, or a voice name (`kokoro: 'am_michael'`), or `{ voice, speed }`. `KHAN_TTS=kokoro` tries it on any scene without editing it. It speaks English, Spanish, French, Hindi, Italian, Japanese, Portuguese and Chinese, and `lang` picks its voice. For Arabic, Urdu, Hebrew and the rest, `KHAN_TTS` leaves the built-in voice on; use `eleven` for a human voice there. The model downloads on first use (about 330 MB), then runs offline. Takes are cached in `.voice/kokoro/`. `KHAN_PYTHON` names the Python that has it installed.
 
 ## Blackboard lessons
 
