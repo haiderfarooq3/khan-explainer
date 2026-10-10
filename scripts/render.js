@@ -10,7 +10,7 @@ const FPS = 30, LEAD = 0.3, GAP = 0.15, TAIL = 1.0;   // seconds: before the fir
 const [sceneFile, out] = process.argv.slice(2);
 const die = m => { console.error(m); process.exit(1); };
 if (!sceneFile || !out) die('usage: node render.js <scene.js> <out.mp4>');
-if (process.platform !== 'darwin') die('the voice uses macOS `say`; swap tts() for another engine on this OS');
+const MAC = process.platform === 'darwin';   // elsewhere espeak-ng stands in for `say`: rougher, but it speaks about a hundred languages
 let chromium;
 try { ({ chromium } = require('playwright')); }
 catch { die(`playwright missing. Run: cd ${__dirname} && npm install && npx playwright install chromium`); }
@@ -22,11 +22,29 @@ const jpeg = dataUrl => Buffer.from(dataUrl.split(',')[1], 'base64');
 // ponytail: one `say` take per beat, so intonation resets at every beat and the voice is robotic.
 // Upgrade: a single full take + forced alignment (whisper.cpp) for word timings, or return a
 // Chatterbox/Piper file from here for a human voice. Anything that writes an audio file works.
+// A scene's `lang` picks the free voice that speaks it; `voice` names one outright.
+const SAY = { en: 'Samantha', ar: 'Majed', he: 'Carmit', hi: 'Lekha', zh: 'Tingting', ja: 'Kyoko', ko: 'Yuna', th: 'Kanya',
+              ru: 'Milena', el: 'Melina', tr: 'Yelda', id: 'Damayanti', es: 'Mónica', fr: 'Thomas', de: 'Anna', it: 'Alice', pt: 'Luciana' };
+const ESPEAK = { en: 'en-us', zh: 'cmn' };   // every other code is espeak-ng's own: ur, fa, bn, ta, ...
+function voiceFor(meta) {
+  const lang = meta.lang || 'en';
+  if (!MAC) {
+    try { execFileSync('espeak-ng', ['--version'], { stdio: 'ignore' }); }
+    catch { die('the free voice needs macOS `say`, or espeak-ng on other systems (apt install espeak-ng)'); }
+    return meta.voice || ESPEAK[lang] || lang;
+  }
+  const voice = meta.voice || SAY[lang];
+  if (!voice) die(`macOS has no built-in voice for lang '${lang}'. Name one with \`voice\`, or use \`eleven\` or \`audio\`.`);
+  if (!execFileSync('say', ['-v', '?'], { encoding: 'utf8' }).split('\n').some(l => l.startsWith(voice + ' ')))
+    die(`the voice ${voice} is not installed. Add it in System Settings > Accessibility > Spoken Content > System voice > Manage Voices.`);
+  return voice;
+}
 function tts(text, i, voice, rate) {
-  const txt = path.join(tmp, `${i}.txt`), aiff = path.join(tmp, `${i}.aiff`);
+  const txt = path.join(tmp, `${i}.txt`), audio = path.join(tmp, MAC ? `${i}.aiff` : `${i}.wav`);
   fs.writeFileSync(txt, text);
-  execFileSync('say', ['-v', voice, '-r', String(rate), '-o', aiff, '-f', txt]);
-  return aiff;
+  if (MAC) execFileSync('say', ['-v', voice, '-r', String(rate), '-o', audio, '-f', txt]);
+  else execFileSync('espeak-ng', ['-v', voice, '-s', String(rate), '-w', audio, '-f', txt]);
+  return audio;
 }
 
 // Optional human voice: put ELEVENLABS_API_KEY in the environment and `eleven: '<voice id>'` on the scene.
@@ -82,6 +100,7 @@ async function elevenTakes(beats, opt, dir) {
   await page.evaluate(m => window.loadImages(m), Object.fromEntries(meta.bgs.map(f => [f, `data:${mime(f)};base64,` + fs.readFileSync(path.resolve(dir, f)).toString('base64')])));
 
   const takes = meta.eleven && !meta.audio ? await elevenTakes(meta.beats, meta.eleven, dir) : null;
+  const voice = meta.audio || takes ? null : voiceFor(meta);
   const gap = meta.gap ?? (takes ? 0 : GAP);   // scene-level `gap` slows the pace: more air between beats. One take already has its own pauses.
   let at = LEAD;
   const clips = [];
@@ -101,7 +120,7 @@ async function elevenTakes(beats, opt, dir) {
   } else {
     timings = meta.beats.map((b, i) => {
       let dur = b.dur || 1;
-      if (b.say) { const f = takes ? takes[i] : tts(b.say, i, meta.voice, meta.rate); dur = probe(f); clips.push({ f, at }); }
+      if (b.say) { const f = takes ? takes[i] : tts(b.say, i, voice, meta.rate); dur = probe(f); clips.push({ f, at }); }
       const t = { start: at, dur: gap < 0.03 ? dur - 0.02 : dur };   // back to back, finish a hair early: the QA frame must not be the next beat's board
       at += dur + gap;
       return t;

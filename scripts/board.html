@@ -5,9 +5,29 @@
 // Every coordinate is in logical board units (1280x720 by default), rendered at SCALE.
 const SCALE = 1.5, cv = document.getElementById('c'), g = cv.getContext('2d');
 const FONT = '"Bradley Hand","Chalkboard SE","Marker Felt",cursive';
-// Arabic, Hebrew and their relatives are written right to left. These faces place stacked vowel marks correctly.
-const RTL = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFC]/, STRONG = /[A-Za-z\u00C0-\u024F\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFC]/;
-const NASKH = '"Traditional Arabic","Noto Naskh Arabic","Geeza Pro","Arial Hebrew"';
+// Each script in a face that writes it properly: a Mac face first, then a Noto face for other systems. Only scripts
+// made of plain strokes are set bold; a faked bold smears vowel marks and stacked consonants. Latin text has no entry.
+// The first that matches wins, so Urdu-only letters come before Arabic and kana before Han.
+const SCRIPTS = [
+  { re: /\p{Script=Hebrew}/u, face: '"Arial Hebrew","Noto Sans Hebrew"' },
+  { urdu: true, re: /[\u0679\u0688\u0691\u06BA\u06BE\u06C1\u06D2]/u, face: '"Noto Nastaliq Urdu"' },   // letters only Urdu uses: written in nastaliq
+  { arabic: true, re: /\p{Script=Arabic}/u, face: '"Traditional Arabic","Noto Naskh Arabic","Geeza Pro"' },
+  { re: /\p{Script=Syriac}|\p{Script=Thaana}|\p{Script=Nko}/u, face: '"Noto Sans Syriac","Noto Sans Thaana","Noto Sans NKo"' },
+  { re: /\p{Script=Devanagari}/u, face: '"Kohinoor Devanagari","Devanagari Sangam MN","Noto Sans Devanagari"' },
+  { re: /\p{Script=Bengali}/u, face: '"Kohinoor Bangla","Bangla Sangam MN","Noto Sans Bengali"' },
+  { re: /\p{Script=Gurmukhi}/u, face: '"Gurmukhi Sangam MN","Noto Sans Gurmukhi"' },
+  { re: /\p{Script=Gujarati}/u, face: '"Kohinoor Gujarati","Gujarati Sangam MN","Noto Sans Gujarati"' },
+  { re: /\p{Script=Tamil}/u, face: '"Tamil Sangam MN","Noto Sans Tamil"' },
+  { re: /\p{Script=Telugu}/u, face: '"Kohinoor Telugu","Telugu Sangam MN","Noto Sans Telugu"' },
+  { re: /\p{Script=Kannada}|\p{Script=Malayalam}|\p{Script=Sinhala}|\p{Script=Oriya}/u, face: '"Kannada Sangam MN","Malayalam Sangam MN","Sinhala Sangam MN","Oriya Sangam MN","Noto Sans Kannada","Noto Sans Malayalam","Noto Sans Sinhala","Noto Sans Oriya"' },
+  { re: /\p{Script=Thai}|\p{Script=Lao}|\p{Script=Khmer}|\p{Script=Myanmar}|\p{Script=Tibetan}/u, face: '"Thonburi","Lao Sangam MN","Khmer Sangam MN","Myanmar Sangam MN","Kailasa","Noto Sans Thai Looped","Noto Looped Thai","Noto Sans Thai","Noto Sans Lao","Noto Sans Khmer","Noto Sans Myanmar","Noto Serif Tibetan"' },
+  { re: /\p{Script=Hiragana}|\p{Script=Katakana}/u, bold: true, face: '"Klee","Hiragino Maru Gothic ProN","Noto Sans CJK JP"' },   // kana anywhere makes the Han in it Japanese
+  { re: /\p{Script=Hangul}/u, bold: true, face: '"Nanum Pen Script","Apple SD Gothic Neo","Noto Sans CJK KR"' },
+  { re: /\p{Script=Han}/u, bold: true, face: '"Hannotate SC","Kaiti SC","PingFang SC","Noto Sans CJK SC"' },
+  { re: /\p{Script=Cyrillic}|\p{Script=Greek}|\p{Script=Armenian}|\p{Script=Georgian}/u, bold: true, face: '"Comic Sans MS","Noto Sans"' },
+];
+const LETTER = /\p{L}/u, RTL = /\p{Script=Hebrew}|\p{Script=Arabic}|\p{Script=Syriac}|\p{Script=Thaana}|\p{Script=Nko}/u;
+const URDU = SCRIPTS.find(k => k.urdu).face;
 const C = { yellow: '#ffe066', blue: '#4fc3f7', orange: '#ffb74d', pink: '#f48fb1',
             green: '#81c784', red: '#ef5350', purple: '#b39ddb', white: '#e8e8e8' };
 // Light mode: marker colours on a white board. The names stay the same, so a scene needs no change.
@@ -64,22 +84,31 @@ function stroke(pts, p = 1, o = {}) {
 }
 function write(str, x, y, p = 1, o = {}) {
   if (p <= 0) return;
-  const size = o.size || 36, shaped = RTL.test(str), rtl = shaped && RTL.test((str.match(STRONG) || [''])[0]);   // the first letter sets the direction
-  // A naskh face has no bold, and a faked one smears the vowel marks. A Latin label that quotes an Arabic word keeps its own hand.
-  g.font = !shaped ? `bold ${size}px ${FONT}` : rtl ? `${size}px ${NASKH},${FONT}` : `bold ${size}px ${FONT},${NASKH}`;
+  const size = o.size || 36, sc = SCRIPTS.find(k => k.re.test(str)), shaped = !!sc;
+  const rtl = shaped && RTL.test((str.match(LETTER) || [''])[0]);   // the first letter sets the direction
+  // Urdu shares Arabic's letters but is written in nastaliq. `lang: 'ur'` on the call or the scene says so when no Urdu-only letter does.
+  const face = sc?.arabic && (o.lang || S?.lang) === 'ur' ? URDU : sc?.face;
+  // A Latin label that quotes a foreign word keeps its own hand, and the foreign word falls back to its script's face.
+  const latin = !rtl && /\p{Script=Latin}/u.test((str.match(LETTER) || [''])[0]);
+  g.font = !shaped ? `bold ${size}px ${FONT}` : latin ? `bold ${size}px ${FONT},${face}` : `${sc.bold ? 'bold ' : ''}${size}px ${face},${FONT}`;
   g.fillStyle = o.color || C.white; g.textAlign = 'left';
   if (shaped) g.direction = rtl ? 'rtl' : 'ltr';
   const m = g.measureText(str), full = m.width, lx = o.center ? x - full / 2 : rtl ? x - full : x;   // x is where the pen starts: the right end of right-to-left text
-  if (lx < 0 || lx + full > W || y - size < 0 || y > H) warns.add(`text runs off the board: "${str}"`);
-  labels.push({ str, x: lx, y: y - size * 0.8, w: full, h: size });
+  // Ink, not advance width: a nastaliq word or a Thai tone mark can reach past the box the text advances by.
+  // Nastaliq also stacks its letters far above the line.
+  const ink0 = shaped ? lx - m.actualBoundingBoxLeft : lx, ink1 = shaped ? lx + m.actualBoundingBoxRight : lx + full;
+  const top = shaped ? y - Math.max(size * 0.8, m.actualBoundingBoxAscent) : y - size * 0.8, bot = shaped ? y + m.actualBoundingBoxDescent : y + size * 0.2;
+  if (ink0 < 0 || ink1 > W || (shaped ? top : y - size) < 0 || (shaped ? bot : y) > H) warns.add(`text runs off the board: "${str}"`);
+  labels.push({ str, x: ink0, y: top, w: ink1 - ink0, h: bot - top });
   if (!shaped) {
     const sub = str.slice(0, Math.ceil(str.length * p));
     g.fillText(sub, lx, y);
     if (p < 1) pen = [lx + g.measureText(sub).width, y - size * 0.3];
     return;
   }
-  // Joined letters take their shape from their neighbours, and a vowel mark belongs to the letter under it.
-  // A sliced string would reshape as it grows, so shape the whole string once and uncover it in writing order.
+  // Joined letters take their shape from their neighbours, a vowel mark belongs to the letter it sits on, and an
+  // Indic vowel sign can be drawn before the consonant it follows. A sliced string would reshape as it grows,
+  // so shape the whole string once and uncover it in writing order.
   const shown = full * p, edge = rtl ? lx + full - shown : lx + shown;
   const up = m.actualBoundingBoxAscent + 4, down = m.actualBoundingBoxDescent + 4;   // marks stack well above and below the letters
   g.save(); g.beginPath(); g.rect(rtl ? edge : lx - size, y - up, shown + size, up + down); g.clip();
@@ -106,7 +135,7 @@ function paint(name, alpha) {   // fit the screenshot inside the board, letterbo
   const im = IMGS[name], k = Math.min(W / im.width, H / im.height);
   g.globalAlpha = alpha; g.drawImage(im, (W - im.width * k) / 2, (H - im.height * k) / 2, im.width * k, im.height * k); g.globalAlpha = 1;
 }
-window.sceneMeta = () => S && { voice: S.voice || 'Samantha', rate: S.rate || 170, gap: S.gap, audio: S.audio, eleven: S.eleven, size: [W, H], bgs: [...new Set(S.beats.map(b => b.bg).filter(Boolean))], beats: S.beats.map(b => ({ say: b.say || '', dur: b.dur, at: b.at })) };
+window.sceneMeta = () => S && { voice: S.voice, lang: S.lang, rate: S.rate || 170, gap: S.gap, audio: S.audio, eleven: S.eleven, size: [W, H], bgs: [...new Set(S.beats.map(b => b.bg).filter(Boolean))], beats: S.beats.map(b => ({ say: b.say || '', dur: b.dur, at: b.at })) };
 window.setTimings = t => { T = t; };
 window.warnings = () => [...warns];
 window.frame = t => {

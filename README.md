@@ -61,6 +61,7 @@ node scripts/render.js examples/ai-agents.js agents.mp4                    # bla
 KHAN_THEME=light node scripts/render.js examples/ai-agents.js light.mp4    # whiteboard
 node scripts/render.js examples/ui-tutorial.js tutorial.mp4                # drawn over screenshots
 node scripts/render.js examples/arabic.js arabic.mp4                      # right-to-left writing
+node scripts/render.js examples/languages.js languages.mp4                # one word in eight languages
 ```
 
 Each render also prints the path of a contact sheet: the board at the end of every beat, in one image. That sheet is how Claude checks its own layout before it shows you anything.

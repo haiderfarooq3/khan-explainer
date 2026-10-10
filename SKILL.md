@@ -47,6 +47,7 @@ Use the tutorial pace whenever the viewer has to find something on a screen. The
 ```js
 scene({
   voice: 'Samantha', rate: 170, size: [1280, 720],   // all optional. [720, 1280] = vertical
+  lang: 'ar',                                        // the language spoken: picks the voice (see "Other languages")
   gap: 0.15, dim: 0.2,                               // seconds between beats; screenshot darkening
   theme: 'light',                                    // whiteboard and marker. Leave it out for the blackboard.
   beats: [
@@ -65,7 +66,7 @@ Every draw call is `(geometry, p, style)`. Points are `[x, y]` in board units.
 
 | Call | Draws |
 |---|---|
-| `write(str, x, y, p, {size, color, center})` | Handwriting, letter by letter. `y` is the baseline. Arabic and Hebrew run left from `x`. |
+| `write(str, x, y, p, {size, color, center, lang})` | Handwriting, letter by letter. `y` is the baseline. Arabic, Urdu and Hebrew run left from `x`. |
 | `stroke(points, p, {color, width})` | Any shape, drawn progressively. |
 | `arrow(from, to, p, {color, ctrl})` | Arrow. `ctrl` is a point that bends it. |
 | `check(x, y, p, {size, color})` | Tick mark. |
@@ -77,7 +78,28 @@ Every draw call is `(geometry, p, style)`. Points are `[x, y]` in board units.
 
 Text width is about `0.45 × size` per character for a normal label and `0.63 × size` per capital. Work it out before placing a label beside anything.
 
-**Right-to-left scripts.** `write` spots Arabic or Hebrew from the first letter. `x` is then the right end of the text, where the pen starts (the centre with `center: true`), and the word is uncovered right to left with its letters already joined and its vowel marks in place. It runs small: give it about twice the size of a Latin label, and allow about `0.3 × size` per letter, not counting vowel marks. The voice does not change, so `say` spells the sound ("kitaab") and the board shows the word. See `examples/arabic.js`.
+## Other languages
+
+`write` takes any script and writes it the way that script is written by hand. The first letter of the string decides the direction; its script picks the face.
+
+| Script | Direction | Set in | Width per letter, roughly |
+|---|---|---|---|
+| Arabic, Persian | right to left | naskh, regular weight | `0.3–0.5 × size` (vowel marks add none). Give it about twice a Latin label's size. |
+| Urdu | right to left | nastaliq: letters slope down to the left and stack about `1.6 × size` tall | `0.5 × size`. Keep it near `0.7×` a Latin size and leave a tall line. |
+| Hebrew | right to left | regular weight, points (niqqud) kept | `0.65 × size` |
+| Hindi, Bengali, Tamil and other Indic | left to right, hung from a headline | regular weight | `0.7–0.9 × size` per syllable |
+| Thai, Lao, Khmer, Burmese | left to right, no spaces between words | looped, regular weight | `0.6 × size` |
+| Chinese, Japanese, Korean | left to right, one square per character | bold | `1.0 × size` per character |
+| Cyrillic, Greek | left to right | bold | `0.65 × size` |
+
+- **Right-to-left text.** `x` is the right end of the text, where the pen starts (the centre with `center: true`), and the word is uncovered right to left.
+- **Shaped, not sliced.** Every non-Latin string is shaped once as a whole and uncovered in writing order, so joined Arabic letters keep their forms, a vowel mark stays on its letter, and a Hindi vowel sign that sits before its consonant appears with it.
+- **Urdu.** It shares Arabic's letters, so `write` spots it only by a letter Arabic does not use (ٹ ڈ ڑ ں ہ ھ ے). Put `lang: 'ur'` on the scene or on the call to be sure of the nastaliq hand.
+- **Mixed labels.** A Latin label that quotes a foreign word keeps the handwriting and runs left to right; the quoted word is set in its own script's face.
+- **The voice.** `lang` on the scene picks the built-in voice: `ar` Majed, `he` Carmit, `hi` Lekha, `zh` Tingting, `ja` Kyoko, `ko` Yuna, `th` Kanya, `ru` Milena, `el` Melina, `tr` Yelda, `id` Damayanti, `es` Mónica, `fr` Thomas, `de` Anna, `it` Alice, `pt` Luciana. A missing voice stops the render with where to download it. macOS has no voice for Urdu, Persian, Bengali or Tamil: use `eleven` (its multilingual model speaks them) or `audio`. An English scene can still show foreign words: then `say` spells the sound ("kitaab") and the board shows the word.
+- The off-board and overlap warnings measure the ink, not the letter count, so a long nastaliq swash or a tall stack of marks still warns.
+
+See `examples/arabic.js` (an Arabic lesson) and `examples/languages.js` (one word in eight languages).
 
 ## Light and dark
 
@@ -202,9 +224,11 @@ For many clips, finish one as the worked example, write the rules above into a b
 | Calling your own variable `box`, `line`, `ring` or `check` | It hides the helper of that name inside your scene. Name rectangles after the thing: `searchBox`, `sendBtn`. |
 | Converting screenshot coordinates by hand | Use `view()`. Hand arithmetic is where rings miss buttons. |
 | Arabic or Hebrew placed by its left edge | For right-to-left text `x` is the right end. Use `center: true` to place it by its middle. |
+| Urdu written in naskh | Add `lang: 'ur'` to the scene. Without an Urdu-only letter the text looks Arabic. |
+| A sentence in another language read by the English voice | Set `lang` on the scene so the matching voice reads it. |
 | Skipping the sheet | Coordinates are written blind. The sheet is the only check. |
 | A real-audio beat timed by ear or by sentence length | Read `at` from `words.txt`. A guess drifts and the pen runs ahead of the voice. |
 
 ## Limits
 
-macOS only. The free voice is robotic: use `eleven` or real audio when the voice matters. `tts()` in `scripts/render.js` is the one place to swap in another engine.
+Built for macOS. On Linux the free voice falls back to espeak-ng (`apt install espeak-ng`), which speaks about a hundred languages but sounds rougher still; install the Noto fonts for the scripts you write. The free voice is robotic: use `eleven` or real audio when the voice matters. `tts()` in `scripts/render.js` is the one place to swap in another engine.
