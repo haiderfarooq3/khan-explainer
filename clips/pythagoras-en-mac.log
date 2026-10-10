@@ -1,0 +1,9 @@
+voice Samantha
+beat 1  0.30s  +1.56s  Here is Pythagoras' theorem.
+beat 2  2.01s  +2.07s  Take a triangle with one right angle.
+beat 3  4.23s  +3.22s  Call the two short sides a and b, and the long side c.
+beat 4  7.60s  +2.72s  Then a squared plus b squared equals c squared.
+beat 5  10.46s  +6.48s  For example, three squared plus four squared is nine plus sixteen, which is twenty five, five squared.
+beat 6  17.09s  +1.80s  It works for every right triangle.
+sheet /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/khan-DJEFtX/sheet.jpg
+ok clips/pythagoras-en-mac.mp4 19.90s

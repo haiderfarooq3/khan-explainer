@@ -1,0 +1,9 @@
+voice Kokoro
+beat 1  0.30s  +2.75s  これはピタゴラスの定理です。
+beat 2  3.20s  +3.70s  直角がひとつある三角形を考えます。
+beat 3  7.05s  +4.42s  短い二辺をエー、ビー、いちばん長い辺をシーとします。
+beat 4  11.63s  +5.30s  すると、エーの二乗たすビーの二乗は、シーの二乗に等しくなります。
+beat 5  17.07s  +7.08s  たとえば、三の二乗たす四の二乗は、九たす十六で二十五、つまり五の二乗です。
+beat 6  24.30s  +3.90s  これはすべての直角三角形で成り立ちます。
+sheet /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/khan-kjgTR5/sheet.jpg
+ok clips/pythagoras-ja-kokoro.mp4 29.20s

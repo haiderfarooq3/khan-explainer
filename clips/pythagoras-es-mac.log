@@ -1,0 +1,9 @@
+voice Mónica
+beat 1  0.30s  +1.61s  Este es el teorema de Pitágoras.
+beat 2  2.06s  +1.82s  Toma un triángulo con un ángulo recto.
+beat 3  4.03s  +2.68s  Llama a y b a los lados cortos, y c al lado largo.
+beat 4  6.86s  +3.35s  Entonces, a al cuadrado más b al cuadrado es igual a c al cuadrado.
+beat 5  10.36s  +6.23s  Por ejemplo, tres al cuadrado más cuatro al cuadrado es nueve más dieciséis, o sea veinticinco, cinco al cuadrado.
+beat 6  16.74s  +1.94s  Funciona con todo triángulo rectángulo.
+sheet /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/khan-T3sXqs/sheet.jpg
+ok clips/pythagoras-es-mac.mp4 19.68s

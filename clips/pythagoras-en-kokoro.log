@@ -1,0 +1,16 @@
+Collecting en-core-web-sm==3.8.0
+  Downloading en_core_web_sm-3.8.0-py3-none-any.whl (12.8 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 12.8/12.8 MB 97.0 MB/s  0:00:00
+Installing collected packages: en-core-web-sm
+Successfully installed en-core-web-sm-3.8.0
+[38;5;2m✔ Download and installation successful[0m
+You can now load the package via spacy.load('en_core_web_sm')
+voice Kokoro
+beat 1  0.30s  +2.15s  Here is Pythagoras' theorem.
+beat 2  2.60s  +2.75s  Take a triangle with one right angle.
+beat 3  5.50s  +3.80s  Call the two short sides a and b, and the long side c.
+beat 4  9.45s  +3.20s  Then a squared plus b squared equals c squared.
+beat 5  12.80s  +6.58s  For example, three squared plus four squared is nine plus sixteen, which is twenty five, five squared.
+beat 6  19.52s  +2.45s  It works for every right triangle.
+sheet /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/khan-i8muRh/sheet.jpg
+ok clips/pythagoras-en-kokoro.mp4 22.98s
