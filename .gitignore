@@ -3,3 +3,4 @@ scripts/cutout
 .voice/
 .DS_Store
 *.mp4
+out/

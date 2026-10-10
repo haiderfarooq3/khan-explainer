@@ -135,7 +135,7 @@ function paint(name, alpha) {   // fit the screenshot inside the board, letterbo
   const im = IMGS[name], k = Math.min(W / im.width, H / im.height);
   g.globalAlpha = alpha; g.drawImage(im, (W - im.width * k) / 2, (H - im.height * k) / 2, im.width * k, im.height * k); g.globalAlpha = 1;
 }
-window.sceneMeta = () => S && { voice: S.voice, lang: S.lang, rate: S.rate || 170, gap: S.gap, audio: S.audio, eleven: S.eleven, size: [W, H], bgs: [...new Set(S.beats.map(b => b.bg).filter(Boolean))], beats: S.beats.map(b => ({ say: b.say || '', dur: b.dur, at: b.at })) };
+window.sceneMeta = () => S && { voice: S.voice, lang: S.lang, kokoro: S.kokoro, rate: S.rate || 170, gap: S.gap, audio: S.audio, eleven: S.eleven, size: [W, H], bgs: [...new Set(S.beats.map(b => b.bg).filter(Boolean))], beats: S.beats.map(b => ({ say: b.say || '', dur: b.dur, at: b.at })) };
 window.setTimings = t => { T = t; };
 window.warnings = () => [...warns];
 window.frame = t => {

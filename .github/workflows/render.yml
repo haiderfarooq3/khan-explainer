@@ -1,0 +1,76 @@
+name: render
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  render:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Tools (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install ffmpeg
+          say -v '?'
+      - name: Tools (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg espeak-ng fonts-noto-core fonts-noto-cjk fonts-noto-extra
+      - name: Playwright
+        working-directory: scripts
+        run: npm ci && npx playwright install --with-deps chromium
+      - name: Faces each script gets
+        run: node tests/fonts.js
+      - name: Render examples and languages
+        run: node tests/run.js out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: render-${{ matrix.os }}
+          path: out/
+
+  kokoro:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      KHAN_TTS: kokoro
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Tools (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ffmpeg espeak-ng
+      - name: Tools (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg espeak-ng fonts-noto-core fonts-noto-cjk fonts-noto-extra
+      - name: Kokoro
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install kokoro soundfile "misaki[ja]" "misaki[zh]"
+          echo "KHAN_PYTHON=$(which python)" >> "$GITHUB_ENV"
+      - name: Playwright
+        working-directory: scripts
+        run: npm ci && npx playwright install --with-deps chromium
+      - name: Render with Kokoro where it speaks the language
+        run: node tests/run.js out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kokoro-${{ matrix.os }}
+          path: out/

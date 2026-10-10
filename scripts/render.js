@@ -2,7 +2,7 @@
 // Render a blackboard explainer:  node render.js <scene.js> <out.mp4>
 // The voice drives the clock: each beat is spoken first and its measured length
 // times that beat's drawing, so voice and pen stay in sync without guessing.
-const { execFileSync, spawn } = require('child_process');
+const { execFileSync, spawn, spawnSync } = require('child_process');
 const { once } = require('events');
 const fs = require('fs'), os = require('os'), path = require('path'), crypto = require('crypto');
 
@@ -83,6 +83,30 @@ async function elevenTakes(beats, opt, dir) {
   }));
 }
 
+// Optional local human voice: `kokoro: true` (or a voice name, or { voice, speed }) on the scene, or
+// KHAN_TTS=kokoro to try it on any scene. Free and offline after the first model download; it speaks
+// English, Spanish, French, Hindi, Italian, Japanese, Portuguese and Chinese. Takes are cached beside the scene.
+const KOKORO = { en: 'af_heart', 'en-gb': 'bf_emma', es: 'ef_dora', fr: 'ff_siwis', hi: 'hf_alpha', it: 'if_sara', ja: 'jf_alpha', pt: 'pf_dora', zh: 'zf_xiaobei' };
+function kokoroTakes(meta, dir) {
+  const o = typeof meta.kokoro === 'string' ? { voice: meta.kokoro } : meta.kokoro === true || !meta.kokoro ? {} : meta.kokoro;
+  const voice = o.voice || KOKORO[meta.lang || 'en'];
+  if (!voice) {
+    if (meta.kokoro) die(`Kokoro does not speak lang '${meta.lang}'. It speaks ${Object.keys(KOKORO).join(', ')}.`);
+    return null;   // only KHAN_TTS asked for it: this language keeps the built-in voice
+  }
+  const said = meta.beats.map((b, i) => ({ i, text: b.say })).filter(b => b.text), speed = o.speed || 1;
+  const cache = path.join(dir, '.voice', 'kokoro');
+  const lines = said.map(b => ({ i: b.i, text: b.text, out: path.join(cache, crypto.createHash('sha1').update(`${voice} ${speed} ${b.text}`).digest('hex').slice(0, 12) + '.wav') }));
+  const todo = lines.filter(l => !fs.existsSync(l.out));
+  if (todo.length) {
+    fs.mkdirSync(cache, { recursive: true });
+    const py = process.env.KHAN_PYTHON || 'python3';
+    const r = spawnSync(py, [path.join(__dirname, 'kokoro_tts.py')], { input: JSON.stringify({ voice, speed, lines: todo }), stdio: ['pipe', 'inherit', 'inherit'] });
+    if (r.status !== 0) die(`Kokoro failed. Install it with: ${py} -m pip install kokoro soundfile (set KHAN_PYTHON to use another Python)`);
+  }
+  return Object.fromEntries(lines.map(l => [l.i, l.out]));
+}
+
 (async () => {
   const browser = await chromium.launch(), page = await browser.newPage();
   const errs = [];
@@ -100,7 +124,9 @@ async function elevenTakes(beats, opt, dir) {
   await page.evaluate(m => window.loadImages(m), Object.fromEntries(meta.bgs.map(f => [f, `data:${mime(f)};base64,` + fs.readFileSync(path.resolve(dir, f)).toString('base64')])));
 
   const takes = meta.eleven && !meta.audio ? await elevenTakes(meta.beats, meta.eleven, dir) : null;
-  const voice = meta.audio || takes ? null : voiceFor(meta);
+  const kok = !meta.audio && !takes && (meta.kokoro || process.env.KHAN_TTS === 'kokoro') ? kokoroTakes(meta, dir) : null;
+  const voice = meta.audio || takes || kok ? null : voiceFor(meta);
+  if (!meta.audio) console.log(`voice ${takes ? 'ElevenLabs' : kok ? 'Kokoro' : voice}`);
   const gap = meta.gap ?? (takes ? 0 : GAP);   // scene-level `gap` slows the pace: more air between beats. One take already has its own pauses.
   let at = LEAD;
   const clips = [];
@@ -120,7 +146,7 @@ async function elevenTakes(beats, opt, dir) {
   } else {
     timings = meta.beats.map((b, i) => {
       let dur = b.dur || 1;
-      if (b.say) { const f = takes ? takes[i] : tts(b.say, i, voice, meta.rate); dur = probe(f); clips.push({ f, at }); }
+      if (b.say) { const f = takes ? takes[i] : kok ? kok[i] : tts(b.say, i, voice, meta.rate); dur = probe(f); clips.push({ f, at }); }
       const t = { start: at, dur: gap < 0.03 ? dur - 0.02 : dur };   // back to back, finish a hair early: the QA frame must not be the next beat's board
       at += dur + gap;
       return t;
