@@ -1,0 +1,45 @@
+name: showcase
+on:
+  push:
+    branches: [ccr-b3d85d31-gwnohj]
+    paths: [showcase/*.js, .github/workflows/showcase.yml]
+permissions:
+  contents: write
+jobs:
+  mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Tools
+        run: |
+          brew install ffmpeg espeak-ng
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install kokoro soundfile "misaki[ja]" "misaki[zh]" unidic
+          python -m unidic download
+      - name: Playwright
+        working-directory: scripts
+        run: npm ci && npx playwright install chromium
+      - name: Render with the Mac voice and with Kokoro
+        run: |
+          mkdir -p clips
+          for f in showcase/*.js; do
+            n=$(basename "$f" .js)
+            node scripts/render.js "$f" "clips/$n-mac.mp4" | tee "clips/$n-mac.log"
+            cp "$(grep '^sheet ' "clips/$n-mac.log" | cut -d' ' -f2)" "clips/$n-mac-sheet.jpg"
+            case "$n" in *-en|*-es|*-hi|*-ja)
+              KHAN_TTS=kokoro KHAN_PYTHON=$(which python) node scripts/render.js "$f" "clips/$n-kokoro.mp4" | tee "clips/$n-kokoro.log";;
+            esac
+          done
+      - name: Commit the clips
+        run: |
+          git config user.name haiderfarooq3
+          git config user.email yohaider8@gmail.com
+          git add -f clips
+          git commit -m "Rendered showcase clips [skip ci]"
+          git push
