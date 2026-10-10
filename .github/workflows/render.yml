@@ -64,6 +64,7 @@ jobs:
         run: |
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install kokoro soundfile "misaki[ja]" "misaki[zh]"
+          pip install unidic && python -m unidic download
           echo "KHAN_PYTHON=$(which python)" >> "$GITHUB_ENV"
       - name: Playwright
         working-directory: scripts

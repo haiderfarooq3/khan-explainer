@@ -18,7 +18,7 @@ for (const f of scenes) {
   if (r.status !== 0 && /no built-in voice|is not installed/.test(log)) verdict = 'skip';
   if (verdict === 'FAIL') bad++;
   console.log(`${verdict.padEnd(4)} ${name.padEnd(12)} ${(log.match(/^ok .* ([\d.]+s)$/m) || [])[1] || ''}`);
-  if (verdict !== 'ok') console.log('     ' + (warns.join('\n     ') || log.trim().split('\n').slice(-2).join('\n     ')));
+  if (verdict !== 'ok') console.log('     ' + (warns.join('\n     ') || log.trim().split('\n').slice(-8).join('\n     ')));
 }
 console.log(bad ? `${bad} failed` : 'all passed');
 process.exit(bad ? 1 : 0);

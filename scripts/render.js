@@ -24,7 +24,8 @@ const jpeg = dataUrl => Buffer.from(dataUrl.split(',')[1], 'base64');
 // Chatterbox/Piper file from here for a human voice. Anything that writes an audio file works.
 // A scene's `lang` picks the free voice that speaks it; `voice` names one outright.
 const SAY = { en: 'Samantha', ar: 'Majed', he: 'Carmit', hi: 'Lekha', zh: 'Tingting', ja: 'Kyoko', ko: 'Yuna', th: 'Kanya',
-              ru: 'Milena', el: 'Melina', tr: 'Yelda', id: 'Damayanti', es: 'Mónica', fr: 'Thomas', de: 'Anna', it: 'Alice', pt: 'Luciana' };
+              ru: 'Milena', el: 'Melina', tr: 'Yelda', id: 'Damayanti', es: 'Mónica', fr: 'Thomas', de: 'Anna', it: 'Alice', pt: 'Luciana',
+              bn: 'Piya', ta: 'Vani', te: 'Geeta', kn: 'Soumya', uk: 'Lesya', vi: 'Linh', pl: 'Zosia', nl: 'Xander', sv: 'Alva', ms: 'Amira' };
 const ESPEAK = { en: 'en-us', zh: 'cmn' };   // every other code is espeak-ng's own: ur, fa, bn, ta, ...
 function voiceFor(meta) {
   const lang = meta.lang || 'en';

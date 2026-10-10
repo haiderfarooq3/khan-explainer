@@ -2,7 +2,7 @@
 # Kokoro: a free, local, human-sounding voice (https://huggingface.co/hexgrad/Kokoro-82M).
 # render.js pipes in {"voice": "af_heart", "speed": 1.0, "lines": [{"text": ..., "out": "0.wav"}]};
 # one process speaks every line, so the model loads once. Setup: pip install kokoro soundfile
-# (and "misaki[ja]" or "misaki[zh]" for Japanese or Chinese).
+# (Japanese: "misaki[ja]" then python -m unidic download; Chinese: "misaki[zh]").
 import json, sys
 import numpy as np, soundfile as sf
 from kokoro import KPipeline
